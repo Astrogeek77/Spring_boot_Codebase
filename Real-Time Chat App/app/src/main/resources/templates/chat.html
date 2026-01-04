@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Real-time Chat App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js" integrity="sha512-tL4PIUsPy+Rks1go4kQG8M8/ItpRMvKnbBjQm4d2DQnFwgcBYRRN00QdyQnWSCwNMsoY/MfJY8nHp2CzlNdtZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!--    <script src=" https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.2.0/bundles/stomp.umd.min.js"></script>-->
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center">Real-Time Chat Application</h1>
+        <div id="chat"
+             class="border rounded p-3 mb-3"
+             style="height: 300px; overflow-y: auto;">
+        </div>
+        <div class="input-group mb-3">
+            <input
+                    type="text"
+                    id="senderInput"
+                    class="form-control"
+                    placeholder="Your Name">
+        </div>
+        <div class="input-group mb-3">
+
+            <input
+                    type="text"
+                    id="messageInput"
+                    class="form-control"
+                    placeholder="Type a message"
+                   >
+        </div>
+        <div class="input-group-append">
+            <button id="sendMessage"
+                    class="btn btn-primary">Send</button>
+        </div>
+
+
+    </div>
+</body>
+<script>
+    // Global Variables
+    var stompClient = null;
+    var senderInput = document.getElementById("senderInput");
+    var contentInput = document.getElementById("messageInput");
+    var sendButton = document.getElementById("sendMessage");
+    var chatDiv = document.getElementById("chat");
+
+    function setConnected(isConnected){
+        sendButton.disabled = !isConnected;
+    }
+
+    function connect() {
+        var socket = new SockJS('/chat');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame){
+            setConnected(true);
+            stompClient.subscribe('/topic/messages', function(message){
+                showMessage(JSON.parse(message.body));
+            });
+        });
+    }
+
+    function showMessage(message) {
+        var messageEl = document.createElement('div');
+        messageEl.className = "border-bottom mb-1 p-1";
+
+        // 1. Format the Sender Name (Bold)
+        var senderSpan = document.createElement('strong');
+        senderSpan.textContent = message.sender;
+
+        // 2. Format the Date/Time (Small, Grey)
+        var timeSpan = document.createElement('span');
+        timeSpan.className = "text-muted ms-2"; // Bootstrap: gray text, margin-left
+        timeSpan.style.fontSize = "0.75rem";
+        timeSpan.textContent = "[" + message.timestamp + "]";
+
+        // 3. Format the Message Content (New Line)
+        var contentDiv = document.createElement('div');
+        contentDiv.textContent = message.content;
+
+        // Append everything to the main message element
+        messageEl.appendChild(senderSpan);
+        messageEl.appendChild(timeSpan);
+        messageEl.appendChild(contentDiv);
+
+        chatDiv.appendChild(messageEl);
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    function sendMessage() {
+        var sender = senderInput.value;
+        var content = contentInput.value;
+        // Note: We do NOT send 'timestamp' here. The server generates it.
+        if(sender && content && stompClient) {
+            var chatMessage = { sender: sender, content: content };
+            stompClient.send('/app/sendMessage', {}, JSON.stringify(chatMessage));
+            contentInput.value = '';
+        }
+    }
+
+    sendButton.onclick = sendMessage;
+    window.onload = connect;
+</script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
