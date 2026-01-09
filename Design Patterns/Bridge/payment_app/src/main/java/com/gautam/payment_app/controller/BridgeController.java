@@ -3,6 +3,7 @@ package com.gautam.payment_app.controller;
 import com.gautam.payment_app.abstraction.CardPayment;
 import com.gautam.payment_app.abstraction.NetBankingPayment;
 import com.gautam.payment_app.abstraction.Payment;
+import com.gautam.payment_app.implementation.ApplePayGateway;
 import com.gautam.payment_app.implementation.PaypalGateway;
 import com.gautam.payment_app.implementation.StripeGateway;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,10 +14,12 @@ public class BridgeController {
 
     private final PaypalGateway paypal;
     private final StripeGateway stripe;
+    private final ApplePayGateway apple;
 
-    public BridgeController(PaypalGateway paypal, StripeGateway stripe) {
+    public BridgeController(PaypalGateway paypal, StripeGateway stripe, ApplePayGateway apple) {
         this.paypal = paypal;
         this.stripe = stripe;
+        this.apple = apple;
     }
 
     @GetMapping("/api/bridge/test")
@@ -38,6 +41,10 @@ public class BridgeController {
         Payment order3 = new CardPayment(stripe);
         order3.makePayment();
         log.append("Order 3: Card via Stripe executed.<br>");
+
+        Payment order4 = new NetBankingPayment(apple);
+        order4.makePayment();
+        log.append("Order 4: NetBanking via Apple executed.<br>");
 
         return "<h3>Bridge Pattern Test Results:</h3>" + log.toString() + "<br>Check console for detailed logs.";
     }
