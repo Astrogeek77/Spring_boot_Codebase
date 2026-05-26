@@ -749,6 +749,80 @@ State-specific behavior is placed into separate classes. The context delegates w
 
 ---
 
+
+## 10. State Pattern
+
+### Intent
+State lets an object alter its behavior when its internal state changes.
+
+### When to use
+- When behavior changes based on object state.
+- When conditional logic becomes large and repetitive.
+
+### UML Diagram
+```text
++---------+       +-----------+
+| Context |------>|   State   |
++---------+       +-----------+
+                        ^
+                        |
+            +-----------+-----------+
+            |                       |
+      +-----------+           +-----------+
+      | StateA    |           | StateB    |
+      +-----------+           +-----------+
+```
+
+### Java Example
+```java
+interface State {
+    void handle(Context context);
+}
+
+class Context {
+    private State state;
+    public void setState(State state) { this.state = state; }
+    public void request() { state.handle(this); }
+}
+
+class StartState implements State {
+    public void handle(Context context) {
+        System.out.println("Starting");
+        context.setState(new StopState());
+    }
+}
+
+class StopState implements State {
+    public void handle(Context context) {
+        System.out.println("Stopping");
+    }
+}
+```
+
+### Explanation
+State-specific behavior is placed into separate classes. The context delegates work to the current state object.
+
+### Pros
+- Removes complex conditionals.
+- Makes state transitions explicit.
+- Improves maintainability.
+
+### Cons
+- Many state classes may be needed.
+- Transition logic can become distributed.
+
+### Real-world use case
+- ATM machine states.
+- Order processing lifecycle.
+- Media player play/pause/stop states.
+
+### Interview Questions
+1. How is State different from Strategy?
+2. Why is State better than many if-else blocks?
+3. Where should transition logic live?
+
+---
+
 ## 11. Bridge Pattern
 
 ### Intent
@@ -782,4 +856,897 @@ class TV implements Device {
     public void off() { System.out.println("TV OFF"); }
 }
 
-abstract 
+abstract class Remote {
+    protected Device device;
+    public Remote(Device device) { this.device = device; }
+    abstract void togglePower();
+}
+
+class BasicRemote extends Remote {
+    public BasicRemote(Device device) { super(device); }
+    void togglePower() { device.on(); }
+}
+```
+
+### Explanation
+The abstraction holds a reference to the implementation interface. Both sides can evolve separately.
+
+### Pros
+- Reduces subclass explosion.
+- Promotes composition.
+- Independent extensibility.
+
+### Cons
+- Adds abstraction layers.
+- Can be harder to understand initially.
+
+### Real-world use case
+- Remote and device hierarchy.
+- Shape abstraction with different rendering engines.
+
+### Interview Questions
+1. When should Bridge be preferred over inheritance?
+2. What two dimensions does Bridge separate?
+3. How does Bridge reduce class explosion?
+
+---
+
+## 12. Chain of Responsibility Pattern
+
+### Intent
+Chain of Responsibility passes a request along a chain of handlers until one handles it.
+
+### When to use
+- When multiple objects can process a request.
+- When sender should not know the exact receiver.
+
+### UML Diagram
+```text
++---------+      +----------------+
+| Client  |----->| Handler        |
++---------+      +----------------+
+                       |
+                       v
+                +--------------+
+                | Next Handler  |
+                +--------------+
+```
+
+### Java Example
+```java
+abstract class Logger {
+    protected Logger next;
+    public void setNext(Logger next) { this.next = next; }
+
+    public void log(String level, String message) {
+        if (canHandle(level)) {
+            write(message);
+        } else if (next != null) {
+            next.log(level, message);
+        }
+    }
+
+    protected abstract boolean canHandle(String level);
+    protected abstract void write(String message);
+}
+
+class ErrorLogger extends Logger {
+    protected boolean canHandle(String level) { return "ERROR".equals(level); }
+    protected void write(String message) { System.out.println("Error: " + message); }
+}
+```
+
+### Explanation
+Each handler decides whether to process the request or pass it onward. This creates a flexible request-processing pipeline.
+
+### Pros
+- Decouples sender and receiver.
+- Flexible ordering of handlers.
+- Easy to add or remove handlers.
+
+### Cons
+- Request may go unhandled.
+- Debugging the chain can be tricky.
+
+### Real-world use case
+- Logging frameworks.
+- Servlet filters.
+- Approval workflows.
+
+### Interview Questions
+1. What happens if no handler processes the request?
+2. How is this pattern used in middleware?
+3. How is Chain of Responsibility different from Command?
+
+---
+
+## 13. Observer Pattern
+
+### Intent
+Observer defines a one-to-many dependency so when one object changes state, all dependents are notified automatically.
+
+### When to use
+- When multiple objects depend on one subject.
+- For event-driven systems.
+
+### UML Diagram
+```text
++---------+        +-----------+
+| Subject |<-------| Observer  |
++---------+        +-----------+
+| attach()|        | update()  |
+| notify()|        +-----------+
++---------+
+```
+
+### Java Example
+```java
+import java.util.*;
+
+interface Observer {
+    void update(String message);
+}
+
+class User implements Observer {
+    private String name;
+    public User(String name) { this.name = name; }
+    public void update(String message) {
+        System.out.println(name + " received: " + message);
+    }
+}
+
+class Channel {
+    private List<Observer> subscribers = new ArrayList<>();
+    public void subscribe(Observer observer) { subscribers.add(observer); }
+    public void notifySubscribers(String msg) {
+        for (Observer o : subscribers) o.update(msg);
+    }
+}
+```
+
+### Explanation
+Observers register themselves with a subject. When the subject changes, it notifies all registered observers.
+
+### Pros
+- Supports loose coupling.
+- Good for event broadcasting.
+- Dynamic subscription management.
+
+### Cons
+- Notification chains can be hard to trace.
+- Risk of memory leaks if observers are not removed.
+
+### Real-world use case
+- GUI event listeners.
+- Publish-subscribe systems.
+- Stock price notifications.
+
+### Interview Questions
+1. How is Observer different from Pub/Sub?
+2. What problems arise with too many observers?
+3. How do you avoid memory leaks in Observer?
+
+---
+
+## 14. Prototype Pattern
+
+### Intent
+Prototype creates new objects by copying an existing object, called the prototype.
+
+### When to use
+- When object creation is expensive.
+- When many similar objects are needed.
+
+### UML Diagram
+```text
++-------------+
+| Prototype   |
++-------------+
+| clone()     |
++-------------+
+      ^
+      |
++-------------+
+| Concrete    |
++-------------+
+```
+
+### Java Example
+```java
+class Document implements Cloneable {
+    private String text;
+
+    public Document(String text) {
+        this.text = text;
+    }
+
+    public Document clone() {
+        try {
+            return (Document) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+### Explanation
+Instead of creating objects from scratch, the system clones an existing one. This is useful when setup cost is high.
+
+### Pros
+- Faster than repeated initialization.
+- Simplifies creation of similar objects.
+
+### Cons
+- Deep cloning can be difficult.
+- Clone behavior may be tricky with references.
+
+### Real-world use case
+- Copying graphic objects in editors.
+- Game enemy templates.
+
+### Interview Questions
+1. What is shallow vs deep copy?
+2. When is Prototype better than Factory?
+3. Why can cloning be risky in Java?
+
+---
+
+## 15. Composite Pattern
+
+### Intent
+Composite lets clients treat individual objects and compositions of objects uniformly.
+
+### When to use
+- When working with tree structures.
+- When leaf and container objects should be used the same way.
+
+### UML Diagram
+```text
++-----------+
+| Component |
++-----------+
+      ^
+      |
++-----------+      +-----------+
+| Leaf      |      | Composite |
++-----------+      +-----------+
+                   | children   |
+                   +-----------+
+```
+
+### Java Example
+```java
+import java.util.*;
+
+interface Employee {
+    void showDetails();
+}
+
+class Developer implements Employee {
+    private String name;
+    public Developer(String name) { this.name = name; }
+    public void showDetails() { System.out.println("Developer: " + name); }
+}
+
+class Manager implements Employee {
+    private List<Employee> employees = new ArrayList<>();
+    public void add(Employee e) { employees.add(e); }
+    public void showDetails() {
+        for (Employee e : employees) e.showDetails();
+    }
+}
+```
+
+### Explanation
+Composite defines a common interface for both leaf objects and containers. This allows recursive tree processing with uniform client code.
+
+### Pros
+- Simplifies tree operations.
+- Uniform handling of objects.
+- Easy recursive composition.
+
+### Cons
+- Can make design too generic.
+- Hard to restrict allowed child types sometimes.
+
+### Real-world use case
+- File systems with files and folders.
+- UI component trees.
+- Organization hierarchies.
+
+### Interview Questions
+1. Why is Composite useful for recursive structures?
+2. What is the role of the component interface?
+3. Can leaves support child operations?
+
+---
+
+## 16. Facade Pattern
+
+### Intent
+Facade provides a simplified interface to a complex subsystem.
+
+### When to use
+- When a subsystem is complex.
+- When client code should be shielded from many dependencies.
+
+### UML Diagram
+```text
++--------+      +---------+
+| Client |----->| Facade  |
++--------+      +---------+
+                     |
+         +-----------+-----------+
+         |           |           |
+     +-------+   +-------+   +-------+
+     | Sub1  |   | Sub2  |   | Sub3  |
+     +-------+   +-------+   +-------+
+```
+
+### Java Example
+```java
+class CPU { void start() { System.out.println("CPU started"); } }
+class Memory { void load() { System.out.println("Memory loaded"); } }
+class Disk { void read() { System.out.println("Disk read"); } }
+
+class ComputerFacade {
+    private CPU cpu = new CPU();
+    private Memory memory = new Memory();
+    private Disk disk = new Disk();
+
+    public void startComputer() {
+        cpu.start();
+        memory.load();
+        disk.read();
+    }
+}
+```
+
+### Explanation
+Facade wraps several subsystem classes and offers a smaller, easier API. It reduces complexity for the client.
+
+### Pros
+- Simplifies usage.
+- Reduces coupling to subsystem.
+- Improves readability.
+
+### Cons
+- Can become a god object if overloaded.
+- May hide useful subsystem capabilities.
+
+### Real-world use case
+- Spring `JdbcTemplate` as simplified database access.
+- Payment gateway wrapper APIs.
+
+### Interview Questions
+1. How is Facade different from Adapter?
+2. Does Facade reduce subsystem complexity or just hide it?
+3. When can Facade become harmful?
+
+---
+
+## 17. Mediator Pattern
+
+### Intent
+Mediator centralizes communication between related objects so they do not reference each other directly.
+
+### When to use
+- When many objects communicate in complex ways.
+- When object interactions become tangled.
+
+### UML Diagram
+```text
++-----------+
+| Mediator  |
++-----------+
+      ^
+      |
++-----------+   +-----------+   +-----------+
+| Colleague |   | Colleague |   | Colleague |
++-----------+   +-----------+   +-----------+
+```
+
+### Java Example
+```java
+interface ChatMediator {
+    void sendMessage(String msg, UserColleague user);
+    void addUser(UserColleague user);
+}
+
+class ChatRoom implements ChatMediator {
+    private java.util.List<UserColleague> users = new java.util.ArrayList<>();
+    public void addUser(UserColleague user) { users.add(user); }
+    public void sendMessage(String msg, UserColleague sender) {
+        for (UserColleague u : users) {
+            if (u != sender) u.receive(msg);
+        }
+    }
+}
+
+abstract class UserColleague {
+    protected ChatMediator mediator;
+    protected String name;
+    public UserColleague(ChatMediator mediator, String name) {
+        this.mediator = mediator;
+        this.name = name;
+    }
+    abstract void send(String msg);
+    abstract void receive(String msg);
+}
+```
+
+### Explanation
+Objects communicate through the mediator instead of directly. This reduces dependencies between colleague objects.
+
+### Pros
+- Reduces tight coupling.
+- Centralizes communication rules.
+- Easier to modify interactions.
+
+### Cons
+- Mediator can become overly complex.
+- Central object may become a bottleneck.
+
+### Real-world use case
+- Chat room systems.
+- Air traffic control.
+- GUI dialog coordination.
+
+### Interview Questions
+1. How is Mediator different from Observer?
+2. What risk exists if Mediator grows too large?
+3. Why does Mediator reduce coupling?
+
+---
+
+## 18. Memento Pattern
+
+### Intent
+Memento captures and restores an object's internal state without violating encapsulation.
+
+### When to use
+- For undo/rollback features.
+- When snapshots of state are required.
+
+### UML Diagram
+```text
++----------+      +----------+      +-----------+
+| Originator|---->| Memento  |<-----| Caretaker |
++----------+      +----------+      +-----------+
+```
+
+### Java Example
+```java
+class EditorMemento {
+    private final String content;
+    public EditorMemento(String content) { this.content = content; }
+    public String getContent() { return content; }
+}
+
+class Editor {
+    private String content;
+    public void setContent(String content) { this.content = content; }
+    public EditorMemento save() { return new EditorMemento(content); }
+    public void restore(EditorMemento memento) { this.content = memento.getContent(); }
+}
+```
+
+### Explanation
+The originator creates a snapshot object that stores state. A caretaker holds the snapshot and can restore it later.
+
+### Pros
+- Supports undo/restore cleanly.
+- Preserves encapsulation.
+
+### Cons
+- Can consume memory with many snapshots.
+- Snapshot management may become expensive.
+
+### Real-world use case
+- Text editor undo.
+- Game save points.
+- Transaction rollback snapshots.
+
+### Interview Questions
+1. How is Memento different from Command in undo systems?
+2. What is the role of caretaker?
+3. Why can Memento be memory intensive?
+
+---
+
+## 19. Template Method Pattern
+
+### Intent
+Template Method defines the skeleton of an algorithm in a base class and lets subclasses redefine certain steps.
+
+### When to use
+- When algorithm structure is fixed but some steps vary.
+- When common workflow should be reused.
+
+### UML Diagram
+```text
++----------------+
+| AbstractClass  |
++----------------+
+| templateMethod()|
+| step1()        |
+| step2()        |
++----------------+
+        ^
+        |
++----------------+
+| ConcreteClass  |
++----------------+
+```
+
+### Java Example
+```java
+abstract class DataProcessor {
+    public final void process() {
+        readData();
+        processData();
+        saveData();
+    }
+
+    abstract void readData();
+    abstract void processData();
+
+    void saveData() {
+        System.out.println("Saving data");
+    }
+}
+
+class CSVProcessor extends DataProcessor {
+    void readData() { System.out.println("Reading CSV"); }
+    void processData() { System.out.println("Processing CSV"); }
+}
+```
+
+### Explanation
+The base class controls the overall algorithm sequence. Subclasses customize only selected steps.
+
+### Pros
+- Reuses algorithm structure.
+- Enforces workflow consistency.
+- Reduces duplicate code.
+
+### Cons
+- Inheritance-based, so less flexible than composition.
+- Changes in base algorithm affect all subclasses.
+
+### Real-world use case
+- Data import pipelines.
+- Framework lifecycle hooks.
+- Game loop skeletons.
+
+### Interview Questions
+1. How is Template Method different from Strategy?
+2. Why is the template method often final?
+3. What is a hook method?
+
+---
+
+## 20. Visitor Pattern
+
+### Intent
+Visitor lets new operations be added to object structures without changing the classes of the elements.
+
+### When to use
+- When operations change more often than element classes.
+- When working with structured object trees.
+
+### UML Diagram
+```text
++---------+        +---------+
+| Visitor |<-------| Element |
++---------+        +---------+
+      ^                  ^
+      |                  |
++-------------+    +-------------+
+| ConcreteVis |    | ConcreteElem|
++-------------+    +-------------+
+```
+
+### Java Example
+```java
+interface ComputerPart {
+    void accept(ComputerPartVisitor visitor);
+}
+
+class Keyboard implements ComputerPart {
+    public void accept(ComputerPartVisitor visitor) { visitor.visit(this); }
+}
+
+interface ComputerPartVisitor {
+    void visit(Keyboard keyboard);
+}
+
+class DisplayVisitor implements ComputerPartVisitor {
+    public void visit(Keyboard keyboard) {
+        System.out.println("Displaying keyboard");
+    }
+}
+```
+
+### Explanation
+Each element accepts a visitor, and the visitor performs type-specific logic. This is a form of double dispatch.
+
+### Pros
+- Adds operations without modifying element classes.
+- Good for stable object structures.
+
+### Cons
+- Hard to add new element types.
+- Can be complex to understand.
+
+### Real-world use case
+- AST processing in compilers.
+- Reporting over object hierarchies.
+
+### Interview Questions
+1. What is double dispatch?
+2. When is Visitor a bad choice?
+3. Why is Visitor good for compiler design?
+
+---
+
+## 21. Interpreter Pattern
+
+### Intent
+Interpreter defines a grammar for a language and uses an interpreter to evaluate sentences in that language.
+
+### When to use
+- For simple languages or expression evaluation.
+- When grammar rules can be modeled as classes.
+
+### UML Diagram
+```text
++----------------+
+| AbstractExpr   |
++----------------+
+| interpret()    |
++----------------+
+      ^
+      |
++-------------+   +--------------+
+| Terminal    |   | NonTerminal  |
++-------------+   +--------------+
+```
+
+### Java Example
+```java
+interface Expression {
+    int interpret();
+}
+
+class NumberExpression implements Expression {
+    private int number;
+    public NumberExpression(int number) { this.number = number; }
+    public int interpret() { return number; }
+}
+
+class AddExpression implements Expression {
+    private Expression left, right;
+    public AddExpression(Expression left, Expression right) {
+        this.left = left;
+        this.right = right;
+    }
+    public int interpret() { return left.interpret() + right.interpret(); }
+}
+```
+
+### Explanation
+Expressions are represented as objects and combined into trees. Evaluating the tree interprets the language.
+
+### Pros
+- Simple to extend for small grammars.
+- Makes grammar structure explicit.
+
+### Cons
+- Becomes complex and slow for large grammars.
+- Many classes may be needed.
+
+### Real-world use case
+- Rule engines.
+- Arithmetic expression evaluators.
+- Query language interpreters.
+
+### Interview Questions
+1. When should Interpreter be avoided?
+2. How does it relate to expression trees?
+3. Why is it unsuitable for complex languages?
+
+---
+
+## 22. Strategy Pattern
+
+### Intent
+Strategy defines a family of algorithms, encapsulates each one, and makes them interchangeable.
+
+### When to use
+- When multiple algorithms solve the same problem.
+- When behavior should be chosen at runtime.
+
+### UML Diagram
+```text
++---------+      +-----------+
+| Context |----->| Strategy  |
++---------+      +-----------+
+                       ^
+                       |
+           +-----------+-----------+
+           |                       |
+      +-----------+          +-----------+
+      | StrategyA |          | StrategyB |
+      +-----------+          +-----------+
+```
+
+### Java Example
+```java
+interface PaymentStrategy {
+    void pay(int amount);
+}
+
+class CreditCardPayment implements PaymentStrategy {
+    public void pay(int amount) { System.out.println("Paid by credit card: " + amount); }
+}
+
+class UpiPayment implements PaymentStrategy {
+    public void pay(int amount) { System.out.println("Paid by UPI: " + amount); }
+}
+
+class ShoppingCart {
+    private PaymentStrategy strategy;
+    public void setStrategy(PaymentStrategy strategy) { this.strategy = strategy; }
+    public void checkout(int amount) { strategy.pay(amount); }
+}
+```
+
+### Explanation
+Different algorithms are packaged into interchangeable classes. The context delegates execution to the selected strategy.
+
+### Pros
+- Eliminates conditional logic for algorithm selection.
+- Easy runtime switching.
+- Supports open/closed principle.
+
+### Cons
+- Client must know available strategies.
+- More classes are introduced.
+
+### Real-world use case
+- Payment modes.
+- Sorting or compression algorithm selection.
+- Route planning methods.
+
+### Interview Questions
+1. How is Strategy different from State?
+2. Why is Strategy preferred over large switch statements?
+3. Who chooses the strategy, client or context?
+
+---
+
+## 23. Adapter Pattern
+
+### Intent
+Adapter converts the interface of one class into another interface the client expects.
+
+### When to use
+- When integrating incompatible interfaces.
+- When reusing legacy code with new systems.
+
+### UML Diagram
+```text
++--------+      +---------+      +---------+
+| Client |----->| Target  |<-----| Adapter |
++--------+      +---------+      +---------+
+                                      |
+                                      v
+                                  +--------+
+                                  | Adaptee|
+                                  +--------+
+```
+
+### Java Example
+```java
+interface MediaPlayer {
+    void play(String audioType, String fileName);
+}
+
+class AdvancedMediaPlayer {
+    public void playVlc(String fileName) {
+        System.out.println("Playing VLC file: " + fileName);
+    }
+}
+
+class MediaAdapter implements MediaPlayer {
+    private AdvancedMediaPlayer advancedPlayer = new AdvancedMediaPlayer();
+
+    public void play(String audioType, String fileName) {
+        if ("vlc".equalsIgnoreCase(audioType)) {
+            advancedPlayer.playVlc(fileName);
+        }
+    }
+}
+```
+
+### Explanation
+Adapter acts as a translator between the client and an incompatible class. It allows old and new systems to work together.
+
+### Pros
+- Reuses existing code.
+- Helps integrate legacy systems.
+- Keeps client code unchanged.
+
+### Cons
+- Adds an extra layer.
+- Too many adapters can complicate design.
+
+### Real-world use case
+- Third-party API integration.
+- Legacy service wrapping.
+- Power plug adapters.
+
+### Interview Questions
+1. How is Adapter different from Facade?
+2. What is the difference between class adapter and object adapter?
+3. Why is Adapter important in legacy modernization?
+
+---
+
+## Pattern Selection Guide
+
+| Scenario | Suitable Pattern |
+|---------|------------------|
+| Complex object creation | Builder |
+| Single shared instance | Singleton |
+| Centralized object creation | Factory |
+| Related object families | Abstract Factory |
+| Access control/lazy load | Proxy |
+| Memory optimization | Flyweight |
+| Add behavior dynamically | Decorator |
+| Sequential traversal | Iterator |
+| Request as object | Command |
+| Behavior based on state | State |
+| Separate abstraction and implementation | Bridge |
+| Request pipeline | Chain of Responsibility |
+| Event notification | Observer |
+| Clone existing object | Prototype |
+| Tree structures | Composite |
+| Simplify subsystem | Facade |
+| Centralized communication | Mediator |
+| Save and restore snapshots | Memento |
+| Fixed algorithm skeleton | Template Method |
+| Add external operations | Visitor |
+| Evaluate grammar/expression | Interpreter |
+| Switch algorithms | Strategy |
+| Interface conversion | Adapter |
+
+## Common Interview Comparison Topics
+
+### Builder vs Factory
+- Factory focuses on which object to create.
+- Builder focuses on how to create a complex object step by step.
+
+### Decorator vs Proxy
+- Decorator primarily adds behavior.
+- Proxy primarily controls access.
+
+### State vs Strategy
+- State changes behavior based on internal transitions.
+- Strategy selects one of many interchangeable algorithms.
+
+### Adapter vs Facade
+- Adapter makes incompatible interfaces work together.
+- Facade simplifies access to a subsystem.
+
+### Observer vs Mediator
+- Observer is one-to-many notification.
+- Mediator centralizes many-to-many communication.
+
+## Study Tips
+- Learn the intent of each pattern first.
+- Understand the problem each pattern solves.
+- Practice identifying patterns in frameworks like Spring, Java Collections, and Java I/O.
+- In interviews, explain trade-offs instead of only definitions.
