@@ -32,18 +32,28 @@ The Iterator pattern allows external clients (like a REST Controller) to travers
 **Response:**
 Returns a JSON array of all products extracted sequentially via the iterator.
 ```json
-[
-  {
-    "id": "P01",
-    "name": "Mechanical Keyboard",
-    "price": 120.0
-  },
-  {
-    "id": "P02",
-    "name": "Wireless Mouse",
-    "price": 50.0
-  }
-]
+   [
+      {
+         id: "P01",
+         name: "Mechanical Keyboard",
+         price: 120
+      },
+      {
+         id: "P02",
+         name: "Wireless Mouse",
+         price: 50
+      },
+      {
+         id: "P03",
+         name: "Curved Monitor",
+         price: 350
+      },
+      {
+         id: "P04",
+         name: "USB-C Hub",
+         price: 30
+      }
+   ]
 ```
 
 ## 🧠 Iterator Pattern Implementation Details
