@@ -1,8 +1,110 @@
 # Design Patterns Handbook
 
-This handbook covers 23 widely used object-oriented design patterns. Each section includes intent, structure, Java example code, UML-style diagram, benefits, drawbacks, usage guidance, real-world examples, and interview questions.
+This handbook covers 25 widely used object-oriented design patterns. Each section includes intent, structure, Java example code, UML-style diagram, benefits, drawbacks, usage guidance, real-world examples, and interview questions.
 
 ---
+## 0. SOLID Principles
+ 
+### Intent
+SOLID is a set of five object-oriented design principles that make software easier to understand, extend, and maintain. They aren't a single pattern but a foundation that many patterns (Strategy, Factory, Decorator, etc.) are built on top of.
+ 
+### When to use
+- When designing class hierarchies and module boundaries.
+- When code is becoming rigid, fragile, or hard to extend without breaking existing behavior.
+- When preparing a codebase for long-term maintainability or team scaling.
+### UML Diagram
+```text
++---------------------------------------------------+
+|                     SOLID                          |
++---------------------------------------------------+
+| S - Single Responsibility  -> one reason to change |
+| O - Open/Closed             -> open to extension,  |
+|                                 closed to modify    |
+| L - Liskov Substitution     -> subtypes replace     |
+|                                 base types safely    |
+| I - Interface Segregation   -> many small interfaces|
+| D - Dependency Inversion    -> depend on abstractions|
++---------------------------------------------------+
+```
+ 
+### Java Example
+```java
+// Violates SRP: handles both invoice math AND persistence
+class InvoiceBad {
+    double calculateTotal() { return 100.0; }
+    void saveToDatabase() { /* db logic */ }
+}
+ 
+// SRP fixed: split responsibilities
+class Invoice {
+    double calculateTotal() { return 100.0; }
+}
+ 
+class InvoiceRepository {
+    void save(Invoice invoice) { /* db logic */ }
+}
+ 
+// OCP + DIP: new payment types added without modifying PaymentProcessor
+interface PaymentMethod {
+    void pay(double amount);
+}
+ 
+class CreditCardPayment implements PaymentMethod {
+    public void pay(double amount) { System.out.println("Paid via card: " + amount); }
+}
+ 
+class UpiPayment implements PaymentMethod {
+    public void pay(double amount) { System.out.println("Paid via UPI: " + amount); }
+}
+ 
+class PaymentProcessor {
+    private final PaymentMethod method;
+    PaymentProcessor(PaymentMethod method) { this.method = method; }
+    void process(double amount) { method.pay(amount); }
+}
+ 
+// ISP: no class is forced to implement methods it doesn't need
+interface Printable { void print(); }
+interface Scannable { void scan(); }
+ 
+class SimplePrinter implements Printable {
+    public void print() { System.out.println("Printing..."); }
+}
+ 
+// LSP: subclass fully honors the base contract
+class Bird {
+    void move() { System.out.println("Flies"); }
+}
+ 
+class Sparrow extends Bird {
+    @Override void move() { System.out.println("Flies fast"); }
+}
+```
+ 
+### Explanation
+- **Single Responsibility Principle (SRP):** a class should have only one reason to change; each class should own exactly one piece of functionality.
+- **Open/Closed Principle (OCP):** classes should be open for extension but closed for modification — new behavior is added via new code, not by editing existing tested code.
+- **Liskov Substitution Principle (LSP):** objects of a subclass should be replaceable wherever the base class is expected, without breaking correctness.
+- **Interface Segregation Principle (ISP):** prefer several small, client-specific interfaces over one large general-purpose interface.
+- **Dependency Inversion Principle (DIP):** high-level modules should depend on abstractions, not concrete implementations; both should depend on interfaces.
+### Pros
+- Reduces coupling and increases cohesion.
+- Makes code easier to test (especially via DIP and mocking interfaces).
+- Encourages extensibility without regression risk.
+- Improves readability and long-term maintainability.
+### Cons
+- Over-applying SOLID (especially ISP/DIP) can lead to excessive abstraction and boilerplate.
+- Can slow down initial development for small or short-lived projects.
+- Requires discipline and experience to apply pragmatically rather than dogmatically.
+### Real-world use case
+- Spring Framework's dependency injection is a direct application of DIP.
+- Plugin/extension systems (IDE plugins, payment gateway integrations) rely on OCP and ISP.
+- Most well-designed microservice APIs follow SRP at the service boundary level.
+### Interview Questions
+1. Can you give an example where violating LSP caused a bug?
+2. How does Dependency Injection relate to the Dependency Inversion Principle?
+3. Isn't SOLID sometimes over-engineering for small projects? When would you relax it?
+--- 
 
 ## 1. Builder Pattern
 
@@ -746,81 +848,6 @@ State-specific behavior is placed into separate classes. The context delegates w
 1. How is State different from Strategy?
 2. Why is State better than many if-else blocks?
 3. Where should transition logic live?
-
----
-
-
-## 10. State Pattern
-
-### Intent
-State lets an object alter its behavior when its internal state changes.
-
-### When to use
-- When behavior changes based on object state.
-- When conditional logic becomes large and repetitive.
-
-### UML Diagram
-```text
-+---------+       +-----------+
-| Context |------>|   State   |
-+---------+       +-----------+
-                        ^
-                        |
-            +-----------+-----------+
-            |                       |
-      +-----------+           +-----------+
-      | StateA    |           | StateB    |
-      +-----------+           +-----------+
-```
-
-### Java Example
-```java
-interface State {
-    void handle(Context context);
-}
-
-class Context {
-    private State state;
-    public void setState(State state) { this.state = state; }
-    public void request() { state.handle(this); }
-}
-
-class StartState implements State {
-    public void handle(Context context) {
-        System.out.println("Starting");
-        context.setState(new StopState());
-    }
-}
-
-class StopState implements State {
-    public void handle(Context context) {
-        System.out.println("Stopping");
-    }
-}
-```
-
-### Explanation
-State-specific behavior is placed into separate classes. The context delegates work to the current state object.
-
-### Pros
-- Removes complex conditionals.
-- Makes state transitions explicit.
-- Improves maintainability.
-
-### Cons
-- Many state classes may be needed.
-- Transition logic can become distributed.
-
-### Real-world use case
-- ATM machine states.
-- Order processing lifecycle.
-- Media player play/pause/stop states.
-
-### Interview Questions
-1. How is State different from Strategy?
-2. Why is State better than many if-else blocks?
-3. Where should transition logic live?
-
 ---
 
 ## 11. Bridge Pattern
@@ -1692,6 +1719,193 @@ Adapter acts as a translator between the client and an incompatible class. It al
 1. How is Adapter different from Facade?
 2. What is the difference between class adapter and object adapter?
 3. Why is Adapter important in legacy modernization?
+
+---
+
+## 24. Null Object Pattern
+ 
+### Intent
+Null Object provides a default, do-nothing object to represent the absence of a value, eliminating the need for null checks scattered throughout the code.
+ 
+### When to use
+- When null checks (`if (obj != null)`) clutter business logic.
+- When a "no-op" default behavior is acceptable and safe.
+- When client code should not need to know whether a real object or an absence-placeholder is being used.
+### UML Diagram
+```text
++-------------------+
+|   AbstractObject   |
++-------------------+
+| request()          |
++-------------------+
+        ^
+        |
+  +-----+-----+
+  |           |
++-----------+  +----------------+
+| RealObject|  |  NullObject    |
++-----------+  +----------------+
+| request() |  | request() {}   |
++-----------+  +----------------+
+```
+ 
+### Java Example
+```java
+interface Customer {
+    String getName();
+    boolean isNull();
+}
+ 
+class RealCustomer implements Customer {
+    private final String name;
+    RealCustomer(String name) { this.name = name; }
+    public String getName() { return name; }
+    public boolean isNull() { return false; }
+}
+ 
+class NullCustomer implements Customer {
+    public String getName() { return "Not Available"; }
+    public boolean isNull() { return true; }
+}
+ 
+class CustomerFactory {
+    private static final String[] names = {"Alice", "Bob"};
+ 
+    public static Customer getCustomer(String name) {
+        for (String n : names) {
+            if (n.equalsIgnoreCase(name)) {
+                return new RealCustomer(n);
+            }
+        }
+        return new NullCustomer();
+    }
+}
+ 
+public class Main {
+    public static void main(String[] args) {
+        Customer c = CustomerFactory.getCustomer("Charlie");
+        // No null check needed here
+        System.out.println(c.getName());
+    }
+}
+```
+ 
+### Explanation
+Instead of returning `null` and forcing every caller to check for it, a Null Object implements the same interface with harmless default behavior. This keeps client code clean and shifts responsibility for handling "absence" into a single, well-tested class.
+ 
+### Pros
+- Removes repetitive null checks.
+- Reduces `NullPointerException` risk.
+- Client code stays simple and uniform.
+- Follows the Liskov Substitution Principle naturally.
+### Cons
+- Can silently hide real errors that a `null` (or exception) would have surfaced.
+- Adds an extra class per abstraction.
+- Not suitable when the caller genuinely needs to distinguish "missing" from "present" for correctness (e.g., financial validations).
+### Real-world use case
+- `Collections.emptyList()` in Java behaves like a null object for collections.
+- Logging frameworks often use a `NoOpLogger` when logging is disabled.
+- UI frameworks use "empty state" components instead of null views.
+### Interview Questions
+1. How does Null Object differ from simply checking `if (obj == null)` everywhere?
+2. What are the risks of using Null Object instead of throwing an exception?
+3. How does this pattern relate to the Liskov Substitution Principle?
+---
+ 
+## 25. Object Pool Pattern
+ 
+### Intent
+Object Pool manages a set of reusable, expensive-to-create objects, handing them out on request and returning them to the pool instead of constructing and destroying them repeatedly.
+ 
+### When to use
+- When object creation is expensive (DB connections, threads, sockets).
+- When you need to limit the number of concurrently active expensive resources.
+- When objects are frequently requested and released in short bursts.
+### UML Diagram
+```text
++-------------------+        +-------------------+
+|      Client        |------->|    ObjectPool     |
++-------------------+        +-------------------+
+                             | acquire()          |
+                             | release(obj)        |
+                             | available[]         |
+                             | inUse[]              |
+                             +-------------------+
+                                       |
+                                       v
+                             +-------------------+
+                             |   PooledObject     |
+                             +-------------------+
+                             | reset()             |
+                             +-------------------+
+```
+ 
+### Java Example
+```java
+import java.util.*;
+ 
+class Connection {
+    private final String id;
+    Connection(String id) { this.id = id; }
+    void reset() { System.out.println(id + " reset for reuse"); }
+    String getId() { return id; }
+}
+ 
+class ConnectionPool {
+    private final Queue<Connection> available = new LinkedList<>();
+    private final Set<Connection> inUse = new HashSet<>();
+    private int counter = 0;
+    private final int maxSize;
+ 
+    ConnectionPool(int maxSize) { this.maxSize = maxSize; }
+ 
+    synchronized Connection acquire() {
+        if (available.isEmpty() && inUse.size() < maxSize) {
+            available.offer(new Connection("conn-" + (++counter)));
+        }
+        Connection conn = available.poll();
+        if (conn != null) inUse.add(conn);
+        return conn;
+    }
+ 
+    synchronized void release(Connection conn) {
+        if (conn == null) return;
+        conn.reset();
+        inUse.remove(conn);
+        available.offer(conn);
+    }
+}
+ 
+public class Main {
+    public static void main(String[] args) {
+        ConnectionPool pool = new ConnectionPool(2);
+        Connection c1 = pool.acquire();
+        Connection c2 = pool.acquire();
+        pool.release(c1);
+        Connection c3 = pool.acquire(); // reuses c1
+    }
+}
+```
+ 
+### Explanation
+The pool pre-allocates or lazily creates a bounded set of reusable objects. Clients "acquire" an object, use it, and "release" it back rather than creating and discarding it, which amortizes the cost of expensive initialization and bounds resource usage.
+ 
+### Pros
+- Significantly reduces object creation/destruction overhead.
+- Bounds resource consumption (e.g., max DB connections).
+- Improves performance under high-throughput, short-lived-usage workloads.
+### Cons
+- Adds complexity around thread safety and lifecycle management.
+- Stale or "dirty" pooled objects can leak state if `reset()` is incomplete.
+- Misconfigured pool size can cause resource starvation or wasted idle resources.
+### Real-world use case
+- JDBC connection pools (HikariCP, Apache DBCP).
+- Thread pools (`ExecutorService` in Java).
+- Object pooling in game engines for bullets/particles that are created and destroyed rapidly.
+### Interview Questions
+1. How would you make an Object Pool thread-safe under high concurrency?
+2. How is Object Pool different from Flyweight? (Hint: pooled objects are mutable and exclusively held; flyweights are shared and immutable.)
+3. What happens if a client forgets to release an object back to the pool — how would you guard against that?   
 
 ---
 
