@@ -1,0 +1,92 @@
+spring:
+  application:
+    name: dual-write-demo
+
+  profiles:
+    active: h2   # switch to "docker" to use Postgres + Kafka via docker-compose
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    com.dualwrite.demo: INFO
+    org.apache.kafka: WARN
+
+---
+# ---------------------------------------------------------------------------
+# Profile: h2  -> in-memory DB, no Kafka broker required.
+# Kafka publish calls are made through a pluggable EventPublisher; in this
+# profile a LoggingEventPublisher stands in for Kafka so the whole demo runs
+# with zero external infra. Great for quickly reading the code / API.
+# ---------------------------------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: jdbc:h2:mem:dualwrite;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+app:
+  messaging:
+    mode: LOG   # LOG | KAFKA
+
+---
+# ---------------------------------------------------------------------------
+# Profile: docker -> Postgres + real Kafka broker (see docker-compose.yml).
+# This is the profile that actually demonstrates the dual-write problem
+# end-to-end, because Kafka publish failures / broker unavailability are
+# real, not simulated.
+# ---------------------------------------------------------------------------
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://localhost:5432/dualwrite
+    username: dualwrite
+    password: dualwrite
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    consumer:
+      group-id: dual-write-demo-consumer
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+app:
+  messaging:
+    mode: KAFKA
+  outbox:
+    topic: order-events
